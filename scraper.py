@@ -11,7 +11,7 @@ def save_file(image, directory, name):
 	with open('{dirname}/{name}'.format(dirname=directory, name=name), 'wb') as out_file:
 		shutil.copyfileobj(image.raw, out_file)
 
-def save_image(elem2):
+def save_image(elem2, name, ext):
 	res = requests.get(elem2.get_attribute("src"), stream=True)
 
 	save_file(res, "/home/seth/python/scraper/imgs", name+ext)
@@ -22,7 +22,7 @@ def save_image(elem2):
 	data = open(local_path, "rb").read()
 	path = "/scraper/" + name+ext
 	dbx.files_upload(data, path)
-	share = dbx.sharing_create_shared_link_with_settings(path)
+	share = dbx.sharing_create_shared_link_with_settings(path).url
 
 	return share
 
@@ -33,6 +33,10 @@ def image_exsits(name):
 		return True
 	except:
 		return False
+
+def get_exsiting(name):
+	dbx = dropbox.Dropbox(token)
+	return dbx.sharing_get_file_metadata("/scraper/" + name)
 
 def scrape(address, saved):
 
@@ -47,10 +51,9 @@ def scrape(address, saved):
 	del other
 
 	if image_exsits(name+ext):
-		#something
+		shared = get_exsiting(name+ext)
 	else:
-		shared = save_image(elem2)
-		#save link in sql 
+		shared = save_image(elem2, name, ext)
 
 
 	# res = requests.get(elem2.get_attribute("src"), stream=True)
@@ -72,13 +75,13 @@ def scrape(address, saved):
 	address = driver.execute_script("return _playlist[0].file;")
 
 
-	fp = open("info.csv", "a+")
-	fp.write(name)
-	fp.write(",")
-	fp.write(share.url.replace("www.dropbox.com", "dl.dropboxusercontent.com").replace("?dl=0", ""))
-	fp.write(",")
-	fp.write(driver.execute_script("return _playlist[0].file;"))
-	fp.write("\n")
+	# fp = open("info.csv", "a+")
+	# fp.write(name)
+	# fp.write(",")
+	# fp.write(share.url.replace("www.dropbox.com", "dl.dropboxusercontent.com").replace("?dl=0", ""))
+	# fp.write(",")
+	# fp.write(driver.execute_script("return _playlist[0].file;"))
+	# fp.write("\n")
 
 	driver.close()
 
