@@ -5,7 +5,7 @@ import shutil
 import os
 import dropbox
 import sqlite3
-import token
+import dropkey as tok
 
 def save_file(image, directory, name):
 	with open('{dirname}/{name}'.format(dirname=directory, name=name), 'wb') as out_file:
@@ -64,7 +64,7 @@ def scrape(dbx, driver, page):
 
 
 def main():
-	with dropbox.Dropbox(token) as dbx, webdriver.Firefox() as driver:
+	with dropbox.Dropbox(tok.token()) as dbx, webdriver.Firefox() as driver:
 		con = sqlite3.connect("/home/seth/python/scraper/cache.db")
 		c = con.cursor()
 
