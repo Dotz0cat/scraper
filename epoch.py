@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 from selenium import webdriver
 
 def loop_page(driver, curser):
@@ -7,7 +8,8 @@ def loop_page(driver, curser):
 		elem = driver.find_element_by_xpath("/html/body/div[3]/div[1]/div[2]/div[2]/div[1]/ul/li[{0}]/a".format(i))
 		url = elem.get_attribute("href")
 		print(url)
-		date = curser.execute("SELECT strftime('%Y-%m-%d', 'now');")
+		date = datetime.date.today()
+		#date = curser.execute("SELECT strftime('%Y-%m-%d', 'now'); --")
 		data = [url, date]
 		curser.execute("INSERT INTO Urls (Url, Date_late_scraped) VALUES (?, ?)", data)
 
@@ -15,6 +17,7 @@ con = sqlite3.connect("/home/seth/python/scraper/cache.db")
 c = con.cursor()
 
 c.execute("CREATE TABLE Urls(Url text, Date_late_scraped text)")
+c.execute("CREATE TABLE Stations(Name text, Image text, Address text)")
 
 con.commit();
 con.close();

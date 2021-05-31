@@ -11,7 +11,7 @@ def save_file(image, directory, name):
 	with open('{dirname}/{name}'.format(dirname=directory, name=name), 'wb') as out_file:
 		shutil.copyfileobj(image.raw, out_file)
 
-def save_image(dbx, elem2, name, ext):
+def save_image(dbx, elem2, name, ext, local_path):
 	res = requests.get(elem2.get_attribute("src"), stream=True)
 
 	save_file(res, "/home/seth/python/scraper/imgs", name+ext)
@@ -31,7 +31,6 @@ def image_exsits(dbx, name):
 		return False
 
 def get_exsiting(dbx, name):
-	dbx = dropbox.Dropbox(token)
 	return dbx.sharing_get_file_metadata("/scraper/" + name).preview_url
 
 def scrape(dbx, driver, page):
@@ -47,13 +46,20 @@ def scrape(dbx, driver, page):
 	if image_exsits(dbx, name+ext):
 		shared = get_exsiting(dbx, name+ext)
 	else:
-		shared = save_image(dbx, elem2, name, ext)
+		shared = save_image(dbx, elem2, name, ext, local_path)
+
+	share = shared.replace("www.dropbox.com", "dl.dropboxusercontent.com").replace("?dl=0", "")
 
 	address = driver.execute_script("return _playlist[0].file;")
 
 	#driver.close()
 
-	return name, shared, address
+	print(name)
+	print(shared)
+	print(address)
+	print("\r\n\r\n")
+
+	return name, share, address
 
 #scrape("https://mytuner-radio.com/radio/soulful-web-station-417283/")
 
@@ -68,12 +74,20 @@ def main():
 		con = sqlite3.connect("/home/seth/python/scraper/cache.db")
 		c = con.cursor()
 
-		for row in c.execute("SELECT Url FROM Urls"):
-			name, image, address = scrape(dbx, driver, row)
+		c.execute("SELECT Url FROM Urls")
+
+		rows = c.fetchall()
+
+		for row in rows:
+			print(row[0])
+			name, image, address = scrape(dbx, driver, row[0])
 			data = [name, image, address]
-			c.execute("INSERT INTO stations (Name, Image, Address) VALUES (?, ?, ?)", data)
-			c.execute("UPDATE Urls SET Date_last_scraped = strftime('%Y-%m-%d', 'now') WHERE Url = ?", row)
+			c.execute("INSERT INTO Stations (Name, Image, Address) VALUES (?, ?, ?)", data)
+			c.execute("UPDATE Urls SET Date_late_scraped = strftime('%Y-%m-%d', 'now') WHERE Url = ?", row[0])
+			con.commit()
 			time.sleep(10)
 
-		con.commit()
 		con.close()
+
+if __name__ == '__main__':
+	main()
