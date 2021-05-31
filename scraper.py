@@ -36,7 +36,7 @@ def image_exsits(name):
 
 def get_exsiting(name):
 	dbx = dropbox.Dropbox(token)
-	return dbx.sharing_get_file_metadata("/scraper/" + name)
+	return dbx.sharing_get_file_metadata("/scraper/" + name).preview_url
 
 def scrape(address, saved):
 
