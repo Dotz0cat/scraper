@@ -5,7 +5,10 @@ import shutil
 import os
 import dropbox
 import sqlite3
+import time
 import dropkey as tok
+import typer
+import pendulum
 
 def save_file(image, directory, name):
 	with open('{dirname}/{name}'.format(dirname=directory, name=name), 'wb') as out_file:
@@ -55,7 +58,7 @@ def scrape(dbx, driver, page):
 	#driver.close()
 
 	print(name)
-	print(shared)
+	print(share)
 	print(address)
 	print("\r\n\r\n")
 
@@ -69,7 +72,32 @@ def scrape(dbx, driver, page):
 #/html/body/div[3]/div[1]/div[2]/div[2]/div[1]/ul/li[32]
 
 
-def main():
+# def main():
+# 	with dropbox.Dropbox(tok.token()) as dbx, webdriver.Firefox() as driver:
+# 		con = sqlite3.connect("/home/seth/python/scraper/cache.db")
+# 		c = con.cursor()
+
+# 		c.execute("SELECT Url FROM Urls")
+
+# 		rows = c.fetchall()
+
+# 		for row in rows:
+# 			print(row[0])
+# 			name, image, address = scrape(dbx, driver, row[0])
+# 			data = [name, image, address]
+# 			c.execute("INSERT INTO Stations (Name, Image, Address) VALUES (?, ?, ?)", data)
+# 			c.execute("UPDATE Urls SET Date_late_scraped = strftime('%Y-%m-%d', 'now') WHERE Url = ?", [row[0]])
+# 			con.commit()
+# 			time.sleep(10)
+
+# 		con.close()
+
+
+
+app = typer.Typer()
+
+@app.command()
+def force():
 	with dropbox.Dropbox(tok.token()) as dbx, webdriver.Firefox() as driver:
 		con = sqlite3.connect("/home/seth/python/scraper/cache.db")
 		c = con.cursor()
@@ -83,11 +111,61 @@ def main():
 			name, image, address = scrape(dbx, driver, row[0])
 			data = [name, image, address]
 			c.execute("INSERT INTO Stations (Name, Image, Address) VALUES (?, ?, ?)", data)
-			c.execute("UPDATE Urls SET Date_late_scraped = strftime('%Y-%m-%d', 'now') WHERE Url = ?", row[0])
+			c.execute("UPDATE Urls SET Date_late_scraped = strftime('%Y-%m-%d', 'now') WHERE Url = ?", [row[0]])
+			con.commit()
+			time.sleep(10)
+
+		con.close()
+
+@app.command()
+def time_since(days: int, months: int = 0, years: int = 0):
+	with dropbox.Dropbox(tok.token()) as dbx, webdriver.Firefox() as driver:
+		con = sqlite3.connect("/home/seth/python/scraper/cache.db")
+		c = con.cursor()
+
+		today = pendulum.now()
+
+		time = today.subtract(years=years, months=months, days=days)
+
+		print(time.format('YYYY-MM-DD'))
+
+		c.execute("SELECT Url FROM Urls Where Date_late_scraped <= ?", [time.format('YYYY-MM-DD')])
+
+		rows = c.fetchall()
+
+
+		for row in rows:
+			print(row[0])
+			name, image, address = scrape(dbx, driver, row[0])
+			data = [name, image, address]
+			c.execute("INSERT INTO Stations (Name, Image, Address) VALUES (?, ?, ?)", data)
+			c.execute("UPDATE Urls SET Date_late_scraped = strftime('%Y-%m-%d', 'now') WHERE Url = ?", [row[0]])
+			con.commit()
+			time.sleep(10)
+
+		con.close()
+
+@app.command()
+def manual(date: str):
+	with dropbox.Dropbox(tok.token()) as dbx, webdriver.Firefox() as driver:
+		con = sqlite3.connect("/home/seth/python/scraper/cache.db")
+		c = con.cursor()
+
+		c.execute("SELECT Url FROM Urls Where Date_late_scraped <= ?", [date])
+
+		rows = c.fetchall()
+
+
+		for row in rows:
+			print(row[0])
+			name, image, address = scrape(dbx, driver, row[0])
+			data = [name, image, address]
+			c.execute("INSERT INTO Stations (Name, Image, Address) VALUES (?, ?, ?)", data)
+			c.execute("UPDATE Urls SET Date_late_scraped = strftime('%Y-%m-%d', 'now') WHERE Url = ?", [row[0]])
 			con.commit()
 			time.sleep(10)
 
 		con.close()
 
 if __name__ == '__main__':
-	main()
+	app()
